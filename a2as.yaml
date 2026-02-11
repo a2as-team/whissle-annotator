@@ -1,0 +1,228 @@
+manifest:
+  version: "0.1.3"
+  schema: https://a2as.org/cert/schema
+  subject:
+    name: whissleai/whissle-annotator
+    source: https://github.com/whissleai/whissle-annotator
+    branch: main
+    commit: "c22d856d"
+    scope: [scripts/legal_india/data/youtube_adk_agent.py, scripts/legal_india/data/youtube_tools.py]
+  issued:
+    by: A2AS.org
+    at: '2026-02-11T17:00:21Z'
+    url: https://a2as.org/certified/agents/whissleai/whissle-annotator
+  signatures:
+    digest: sha256:-HqivNtrGIFgKxRdWm1rBSniLICTj3g8bj4cbUEqGBA
+    key: ed25519:882bKXfUNO8HJT_cyIBYahioA33AnKxezzrJWHpZQWY
+    sig: ed25519:1gqesYTNReMeEDX_XbyBIAY3b6AIBN6OaziR9Os-6vaY4dZydEZQ9bhU0mM4N17Y4lZFtVjNYfA74oQfdiMUBg
+
+agents:
+  youtube_agent:
+    type: instance
+    models: [gemini-2.5-pro]
+    tools: [search_youtube_videos]
+    params:
+      name: youtube_agent_v1
+      description: Finds YouTube videos and returns the raw JSON data.
+      instruction: [You are a data-focused assistant for YouTube. Your ONLY job is to find videos, 'and return the results
+          as raw, unformatted JSON.', 'Workflow:', '1.  When the user gives you a query, immediately call the `search_youtube_videos`
+          tool.', 2.  Take the JSON output from the `search_youtube_videos` tool., '3.  Your final response to the user MUST
+          be ONLY the raw, complete, and unformatted', JSON string that the tool provided., '**CRITICAL RULES**:', '- DO NOT
+          be conversational.', '- DO NOT provide any text before or after the JSON.', '- DO NOT summarize the results.', '-
+          DO NOT ask the user what they want to do next.', '- Your entire output must be the JSON from the tool.']
+
+models:
+  gemini-2.5-pro:
+    type: literal
+    agents: [youtube_agent]
+
+tools:
+  search_youtube_videos:
+    type: function
+    agents: [youtube_agent]
+    params:
+      description: |-
+        Searches YouTube for videos with closed captions based on a query, optionally
+        biasing results for a specific country. Can be limited to a specific channel.
+
+        Args:
+            query (str): The search term.
+            max_results (int): The maximum number of results to return.
+            region_code (Optional[str]): The ISO 3166-1 alpha-2 country code (e.g., IN, US).
+            channel_handle (Optional[str]): The handle of the YouTube channel to search within (e.g., "SupremeCourtofIndia-1950").
+
+        Returns:
+            str: A JSON string containing a list of video details or an error.
+
+imports:
+  Agent: google.adk.agents.Agent
+  Any: typing.Any
+  argparse: argparse
+  as_completed: concurrent.futures.as_completed
+  asyncio: asyncio
+  build: googleapiclient.discovery.build
+  Dict: typing.Dict
+  download_media_in_parallel: youtube_tools.download_media_in_parallel
+  genai_types: google.genai.types
+  InMemorySessionService: google.adk.sessions.InMemorySessionService
+  json: json
+  List: typing.List
+  load_dotenv: dotenv.load_dotenv
+  logging: logging
+  Optional: typing.Optional
+  os: os
+  Path: pathlib.Path
+  re: re
+  run_youtube_downloader_agent: youtube_adk_agent.run_youtube_downloader_agent
+  Runner: google.adk.runners.Runner
+  search_youtube_videos: youtube_tools.search_youtube_videos
+  storage: google.cloud.storage
+  ThreadPoolExecutor: concurrent.futures.ThreadPoolExecutor
+  types: google.genai.types
+  upload_files_to_gcs_in_parallel: youtube_tools.upload_files_to_gcs_in_parallel
+  uuid: uuid
+  yt_dlp: yt_dlp
+
+functions:
+  __init__:
+    type: sync
+    module: scripts.legal_india.data.youtube_tools
+    args: [self, api_key]
+  __new__:
+    type: sync
+    module: scripts.legal_india.data.youtube_tools
+    args: [cls, api_key]
+  _download_transcript_worker:
+    type: sync
+    module: scripts.legal_india.data.youtube_tools
+    args: [video_info, language, output_dir, cookies_file]
+    params:
+      returns: Dict
+  _download_video_worker:
+    type: sync
+    module: scripts.legal_india.data.youtube_tools
+    args: [video_info, output_dir, cookies_file]
+    params:
+      returns: Dict
+  _sanitize_filename:
+    type: sync
+    module: scripts.legal_india.data.youtube_tools
+    args: [name, max_length]
+    params:
+      returns: str
+  _upload_to_gcs_worker:
+    type: sync
+    module: scripts.legal_india.data.youtube_tools
+    args: [local_path, bucket_name, gcs_prefix]
+    params:
+      returns: Dict
+  call_agent_async:
+    type: async
+    module: scripts.legal_india.data.youtube_adk_agent
+    args: [query, runner, user_id, session_id]
+  download_media_in_parallel:
+    type: sync
+    module: scripts.legal_india.data.youtube_tools
+    args: [videos_json, download_target, language, output_dir, max_workers, cookies_file]
+    params:
+      returns: str
+  get_channel_id:
+    type: sync
+    module: scripts.legal_india.data.youtube_tools
+    args: [self, channel_handle]
+    params:
+      returns: Optional[str]
+  main:
+    type: sync
+    module: scripts.legal_india.data.run_adk_agent
+  run_youtube_downloader_agent:
+    type: async
+    module: scripts.legal_india.data.youtube_adk_agent
+    args: [query, language, max_results, download_target, output_dir, gcs_bucket, region_code, channel_handle, max_workers,
+      cookies_file]
+  search_videos:
+    type: sync
+    module: scripts.legal_india.data.youtube_tools
+    args: [self, query, max_results, region_code, channel_id]
+  search_youtube_videos:
+    type: sync
+    module: scripts.legal_india.data.youtube_tools
+    args: [query, max_results, region_code, channel_handle]
+    params:
+      returns: str
+  setup_api_keys:
+    type: sync
+    module: scripts.legal_india.data.run_adk_agent
+    args: [args]
+  upload_files_to_gcs_in_parallel:
+    type: sync
+    module: scripts.legal_india.data.youtube_tools
+    args: [local_files_json, bucket_name, gcs_prefix, max_workers]
+    params:
+      returns: str
+
+variables:
+  GOOGLE_API_KEY:
+    type: env
+    params:
+      caller: [os.environ, os.environ.get]
+      path: [scripts.legal_india.data.run_adk_agent, scripts.legal_india.data.youtube_adk_agent]
+  GOOGLE_GENAI_USE_VERTEXAI:
+    type: env
+    params:
+      caller: [os.environ]
+  YOUTUBE_API_KEY:
+    type: env
+    params:
+      caller: [os.getenv, os.environ, os.environ.get]
+      path: [scripts.legal_india.data.youtube_tools, scripts.legal_india.data.run_adk_agent, scripts.legal_india.data.youtube_adk_agent]
+
+files:
+  downloaded_path:
+    type: variable
+    actions: [read]
+    params:
+      caller: [Path]
+  file_path:
+    type: literal
+    actions: [read]
+    params:
+      caller: [Path(local_path)]
+  local_path:
+    type: variable
+    actions: [read]
+    params:
+      caller: [Path]
+  metadata.json:
+    type: literal
+    actions: [read]
+    params:
+      caller: [_download_video_worker]
+      path: [video_output_dir]
+  metadata_path:
+    type: variable
+    actions: [write]
+    params:
+      caller: [open]
+      alias: [f]
+  output_path:
+    type: literal
+    actions: [read]
+    params:
+      caller: [Path('/external4/datasets/Shrutilipi/hindi/process_data')]
+  video_output_dir:
+    type: variable
+    actions: [write]
+    params:
+      caller: [video_output_dir.mkdir]
+
+networks:
+  www.youtube.com:
+    type: api
+    actions: [GET]
+    urls: ['/{...}']
+    protocols: [https]
+    ports: ["443"]
+    params:
+      pattern: https://www.youtube.com/watch?v={video_id}
+      caller: [_download_transcript_worker, _download_video_worker]
